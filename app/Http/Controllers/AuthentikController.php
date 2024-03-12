@@ -37,7 +37,7 @@ class AuthentikController extends Controller
                 
                 Auth::login($user);
 
-                return redirect()->route('aliases.index');
+                return redirect()->to(session()->get('url.intended', route('aliases.index')));
 
             } else {
 
