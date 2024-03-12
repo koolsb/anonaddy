@@ -36,6 +36,7 @@ use App\Http\Controllers\UseReplyToController;
 use App\Http\Controllers\AuthentikController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Auth\VerificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,8 +50,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 #Auth::routes(['verify' => true, 'register' => config('anonaddy.enable_registration')]);
-Route::get('email/verify', [\Auth\VerificationController::class, 'show'])->name('verification.notice');
-Route::get('email/verify/{id}/{hash}', [\Auth\VerificationController::class, 'verify'])->name('verification.verify');
+Route::get('email/verify', [VerificationController::class, 'show'])->name('verification.notice');
+Route::get('email/verify/{id}/{hash}', [VerificationController::class, 'verify'])->name('verification.verify');
 #Auth::routes(['verify' => true, 'register' => false]);
 Route::get('/auth/redirect', function () {
     return Socialite::driver('authentik')->redirect();
