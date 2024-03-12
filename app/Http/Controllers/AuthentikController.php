@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 use Ramsey\Uuid\Uuid;
 use Carbon\Carbon;
+use Inertia\Inertia;
 
 class AuthentikController extends Controller
 {
@@ -92,7 +93,7 @@ class AuthentikController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->to(config('services.authentik.logout'));
+        return Inertia::location(config('services.authentik.logout')); //redirect()->to(config('services.authentik.logout'));
 
     }
 }
