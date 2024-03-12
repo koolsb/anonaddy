@@ -92,7 +92,7 @@ class AuthentikController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect(config('services.authentik.logout'));
+        return redirect()->to(config('services.authentik.logout'));
 
     }
 }
