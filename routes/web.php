@@ -49,6 +49,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 #Auth::routes(['verify' => true, 'register' => config('anonaddy.enable_registration')]);
+Auth::routes(['verify' => true, 'register' => false]);
 Route::get('/auth/redirect', function () {
     return Socialite::driver('authentik')->redirect();
 })->name('login');
