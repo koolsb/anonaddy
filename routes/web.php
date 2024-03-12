@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\BackupCodeController;
 use App\Http\Controllers\Auth\ForgotUsernameController;
 use App\Http\Controllers\Auth\PersonalAccessTokenController;
 use App\Http\Controllers\Auth\TwoFactorAuthController;
+use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\Auth\WebauthnController;
 use App\Http\Controllers\Auth\WebauthnEnabledKeyController;
 use App\Http\Controllers\BannerLocationController;
@@ -36,7 +37,6 @@ use App\Http\Controllers\UseReplyToController;
 use App\Http\Controllers\AuthentikController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Foundation\Auth\VerificationController;
 
 /*
 |--------------------------------------------------------------------------
