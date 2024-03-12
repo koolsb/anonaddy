@@ -17,6 +17,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Symfony\Component\Mime\Email;
+use Throwable;
 
 class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
 {
@@ -159,13 +160,7 @@ class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
             }
         }
 
-        $displayFrom = base64_decode($this->displayFrom);
-
-        if ($displayFrom === $this->sender) {
-            $displayFrom = Str::replaceLast('@', ' at ', $this->sender);
-        } else {
-            $displayFrom = $this->getUserDisplayFrom($displayFrom);
-        }
+        $displayFrom = $this->getUserDisplayFrom(base64_decode($this->displayFrom));
 
         $this->email = $this
             ->from($this->fromEmail, $displayFrom)
@@ -348,10 +343,9 @@ class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
     /**
      * Handle a job failure.
      *
-     * @param  \Throwable  $exception
      * @return void
      */
-    public function failed()
+    public function failed(Throwable $exception)
     {
         // Send user failed delivery notification, add to failed deliveries table
         $recipient = Recipient::find($this->recipientId);
@@ -377,7 +371,7 @@ class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
             'sender' => $this->sender,
             'email_type' => 'F',
             'status' => null,
-            'code' => 'An error has occurred, please check the logs.',
+            'code' => $exception->getMessage(),
             'attempted_at' => now(),
         ]);
     }
@@ -393,6 +387,7 @@ class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
             DisplayFromFormat::ADDRESS => str_replace('@', ' at ', $this->sender),
             DisplayFromFormat::DOMAINONLY => Str::afterLast($this->sender, '@'),
             DisplayFromFormat::NONE => null,
+            DisplayFromFormat::LEGACY => $displayFrom." '".$this->sender."'",
             default => str_replace('@', ' at ', $displayFrom." '".$this->sender."'"),
         };
     }
