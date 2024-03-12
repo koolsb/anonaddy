@@ -36,7 +36,7 @@ use App\Http\Controllers\UseReplyToController;
 use App\Http\Controllers\AuthentikController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use Auth\VerificationController;
+use Illuminate\Foundation\Auth\VerificationController;
 
 /*
 |--------------------------------------------------------------------------
