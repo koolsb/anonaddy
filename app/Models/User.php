@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
@@ -51,6 +52,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'default_alias_format',
         'use_reply_to',
         'store_failed_deliveries',
+        'save_alias_last_used',
         'default_username_id',
         'default_recipient_id',
         'password',
@@ -93,6 +95,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_enabled' => 'boolean',
         'use_reply_to' => 'boolean',
         'store_failed_deliveries' => 'boolean',
+        'save_alias_last_used' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'email_verified_at' => 'datetime',
@@ -174,8 +177,10 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected function defaultAliasDomain(): Attribute
     {
+        $defaultDomain = $this->canCreateSharedDomainAliases() ? config('anonaddy.domain') : $this->username.'.'.config('anonaddy.domain');
+
         return Attribute::make(
-            get: fn (?string $value) => $value ?? config('anonaddy.domain'),
+            get: fn (?string $value) => $value ?? $defaultDomain,
         );
     }
 
@@ -559,14 +564,17 @@ class User extends Authenticatable implements MustVerifyEmail
                 })
                 ->pluck('email')
                 ->each(function ($email) use ($gnupg, $fingerprint, $recipientsUsingFingerprint) {
-                    if ($this->isVerifiedRecipient($email) && $recipientsUsingFingerprint->count() === 1) {
-                        $gnupg->deletekey($fingerprint);
+                    if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                        if ($this->isVerifiedRecipient($email) && $recipientsUsingFingerprint->count() === 1) {
+                            $gnupg->deletekey($fingerprint);
 
-                        $recipientsUsingFingerprint->first()->update([
-                            'should_encrypt' => false,
-                            'fingerprint' => null,
-                        ]);
+                            $recipientsUsingFingerprint->first()->update([
+                                'should_encrypt' => false,
+                                'fingerprint' => null,
+                            ]);
+                        }
                     }
+
                 });
         }
     }
@@ -606,13 +614,29 @@ class User extends Authenticatable implements MustVerifyEmail
                 });
             })
             ->concat($customDomains)
-            ->concat($allDomains)
+            ->when($this->canCreateSharedDomainAliases(), function (Collection $collection) use ($allDomains) {
+                return $collection->concat($allDomains);
+            })
             ->reverse()
             ->values();
     }
 
     public function sharedDomainOptions()
     {
-        return config('anonaddy.all_domains');
+        if ($this->canCreateSharedDomainAliases()) {
+            return config('anonaddy.all_domains');
+        }
+
+        return [];
+    }
+
+    public function isAdminUser()
+    {
+        return $this->username === config('anonaddy.admin_username');
+    }
+
+    public function canCreateSharedDomainAliases()
+    {
+        return config('anonaddy.non_admin_shared_domains') || $this->isAdminUser();
     }
 }

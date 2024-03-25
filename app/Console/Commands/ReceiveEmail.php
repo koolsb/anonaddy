@@ -75,12 +75,12 @@ class ReceiveEmail extends Command
         try {
             $this->exitIfFromSelf();
 
+            $recipients = $this->getRecipients();
+
             $file = $this->argument('file');
 
             $this->parser = $this->getParser($file);
             $this->senderFrom = $this->getSenderFrom();
-
-            $recipients = $this->getRecipients();
 
             // Divide the size of the email by the number of recipients (excluding any unsubscribe recipients) to prevent it being added multiple times.
             $recipientCount = $recipients->where('domain', '!=', 'unsubscribe.'.config('anonaddy.domain'))->count();
@@ -236,7 +236,7 @@ class ReceiveEmail extends Command
     {
         $sendTo = Str::replaceLast('=', '@', $recipient['extension']);
 
-        $emailData = new EmailData($this->parser, $this->option('sender'), $this->size);
+        $emailData = new EmailData($this->parser, $this->option('sender'), $this->size, 'R');
 
         $message = new ReplyToEmail($user, $alias, $emailData);
 
@@ -260,7 +260,7 @@ class ReceiveEmail extends Command
 
         $sendTo = Str::replaceLast('=', '@', $recipient['extension']);
 
-        $emailData = new EmailData($this->parser, $this->option('sender'), $this->size);
+        $emailData = new EmailData($this->parser, $this->option('sender'), $this->size, 'S');
 
         $message = new SendFromEmail($user, $alias, $emailData);
 
@@ -505,7 +505,7 @@ class ReceiveEmail extends Command
             return $next($mimePart);
         });
 
-        if ($file == 'stream') {
+        if ($file === 'stream') {
             $fd = fopen('php://stdin', 'r');
             $this->rawEmail = '';
             while (! feof($fd)) {
@@ -549,6 +549,12 @@ class ReceiveEmail extends Command
     protected function getBounceType($code, $status)
     {
         if (preg_match("/(:?mailbox|address|user|account|recipient|@).*(:?rejected|unknown|disabled|unavailable|invalid|inactive|not exist|does(n't| not) exist)|(:?rejected|unknown|unavailable|no|illegal|invalid|no such).*(:?mailbox|address|user|account|recipient|alias)|(:?address|user|recipient) does(n't| not) have .*(:?mailbox|account)|returned to sender|(:?auth).*(:?required)/i", $code)) {
+
+            // If the status starts with 4 then return soft instead of hard
+            if (Str::startsWith($status, '4')) {
+                return 'soft';
+            }
+
             return 'hard';
         }
 
@@ -570,7 +576,7 @@ class ReceiveEmail extends Command
             // Ensure contains '@', may be malformed header which causes sends/replies to fail
             $address = $this->parser->getAddresses('from')[0]['address'];
 
-            return Str::contains($address, '@') ? $address : $this->option('sender');
+            return Str::contains($address, '@') && filter_var($address, FILTER_VALIDATE_EMAIL) ? $address : $this->option('sender');
         } catch (\Exception $e) {
             return $this->option('sender');
         }
