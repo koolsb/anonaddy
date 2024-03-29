@@ -16,7 +16,6 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
-use Ramsey\Uuid\Uuid;
 use Symfony\Component\Mime\Email;
 use Throwable;
 
@@ -371,17 +370,9 @@ class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
             }
         }
 
-        $failedDeliveryId = Uuid::uuid4();
-
-        if ($this->user->store_failed_deliveries) {
-            $isStored = Storage::disk('local')->put("{$failedDeliveryId}.eml", $symfonyMessage->toString());
-        }
-
         $this->user->failedDeliveries()->create([
-            'id' => $failedDeliveryId,
             'recipient_id' => $this->recipientId,
             'alias_id' => $this->alias->id,
-            'is_stored' => $isStored ?? false,
             'bounce_type' => null,
             'remote_mta' => null,
             'sender' => $this->sender,
